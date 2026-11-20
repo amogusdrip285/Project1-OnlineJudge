@@ -1,0 +1,6 @@
+# Force LF everywhere: shell scripts and testcase files break with CRLF inside Linux containers.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.zip binary
+*.png binary
+*.jpg binary
