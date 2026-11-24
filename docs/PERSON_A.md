@@ -78,6 +78,9 @@ backend/
 
 ### Week 2 — Core student endpoints (walking skeleton)
 
+Day-by-day version with exact rules, seed data and tests: [WEEK2_PLAN.md §2](WEEK2_PLAN.md).
+Week-1 carry-over (login, seed, contests endpoints, `fake_judge.py`) is done first.
+
 | Task | Notes |
 |---|---|
 | `services/scoring.py` | Best score per (user, contest, problem): `MAX(score)`. One SQL query with `GROUP BY`, not a loop (avoid N+1). |
@@ -85,7 +88,7 @@ backend/
 | `GET /api/contests/{id}/problems/{pid}` | Includes sample tests read from files (`is_sample=true`) |
 | `POST .../submit` | Validate language, `MAX_SOURCE_BYTES` → 413, cooldown → 429 (check last submission time in DB, no Redis needed), snapshot `max_points`, insert `PENDING` |
 | `GET /api/contests/{id}/submissions`, `GET /api/submissions/{id}` | Owner or admin; others get **404** |
-| Smoke test script `scripts/smoke_test.sh` (with B, C) | Login → submit A+B → poll → AC. Runs in CI. |
+| Smoke test script `scripts/smoke_test.py` (with B, C) | Login → submit A+B → poll → AC. Runs in CI. |
 
 **Milestone M2 (end of week 2):** real end-to-end on `main` with B's judge and C's UI.
 
@@ -139,7 +142,7 @@ the integration session, README, help run the final checklists.
 | Unit | `security.py`, `scoring.py` math, zip validation, CSV parsing | Plain pytest, no DB |
 | API | Every endpoint: success, 401, 403, 404, validation errors | `TestClient` + real Postgres test DB, each test in a rolled-back transaction |
 | Migration | `alembic upgrade head` works on an empty DB and models match the migrations | `tests/test_migrations.py` (skipped when no DB is available) |
-| Integration | Full flow with the judge | `scripts/smoke_test.sh` in CI |
+| Integration | Full flow with the judge | `scripts/smoke_test.py` in CI |
 
 Run locally: `docker compose up -d db` then `cd backend && uv run pytest`.
 

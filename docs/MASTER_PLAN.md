@@ -5,6 +5,7 @@ Frontend) fit together. If your code follows this file, merging is just `git mer
 
 - Scope, MVP tasks per person: see [PLAN.md](PLAN.md).
 - Features for weeks 4–6 and their DB/API specs: see [FEATURES.md](FEATURES.md).
+- Week 2 day-by-day plan for A, B, C: see [WEEK2_PLAN.md](WEEK2_PLAN.md).
 - This file: the **shared specs** (DB, API, judge), **conventions**, **git workflow** and **schedule**.
 
 > If you need to change something in this file (a table, a JSON field…), just change it and tell
@@ -52,10 +53,14 @@ Project1-OnlineJudge/
 ├── docs/
 │   ├── PLAN.md
 │   ├── MASTER_PLAN.md           # this file
-│   └── FEATURES.md              # weeks 4–6 features + their DB/API specs
+│   ├── FEATURES.md              # weeks 4–6 features + their DB/API specs
+│   ├── WEEK2_PLAN.md            # week 2 (M2) day-by-day plan
+│   └── reports/                 # weekly progress reports for the teacher
 ├── data/
 │   ├── seed/problems/           # committed sample problems (testcases for seed data)
-│   └── problems/                # runtime testcase storage — gitignored
+│   └── problems/                # placeholder only; runtime testcases live in the `problems` volume (§3.3)
+├── scripts/
+│   └── smoke_test.py            # end-to-end check used by CI (§10.4)
 ├── backend/                     # A
 │   ├── Dockerfile
 │   ├── pyproject.toml
@@ -102,6 +107,7 @@ POSTGRES_DB=oj
 DATABASE_URL=postgresql://oj:change-me@db:5432/oj
 
 # --- Backend ---
+SEED_ON_START=true               # dev: load demo users/contest/problems on start (idempotent)
 JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRE_MINUTES=720
 CORS_ORIGINS=http://localhost:5173
@@ -125,8 +131,10 @@ Rules: adding a variable means adding it to `.env.example` in the same PR. Never
 
 ### 3.3 Shared volume
 
-`./data/problems` is mounted at **`/data/problems`** in `backend` (read-write) and `judge`
-(**read-only**).
+The named volume `problems` is mounted at **`/data/problems`** in `backend` (read-write) and
+`judge` (**read-only**). It is a named volume, not a bind mount of `./data/problems`, because the
+backend runs as uid 10001 and cannot write into a host folder owned by another uid on Linux/CI.
+Inspect it with `docker compose exec backend ls /data/problems`; wipe it with `docker compose down -v`.
 
 ### 3.4 docker-compose skeleton (created on Day 0)
 
@@ -146,13 +154,13 @@ services:
     build: ./backend
     env_file: .env
     ports: ["8000:8000"]
-    volumes: ["./data/problems:/data/problems"]
+    volumes: ["problems:/data/problems"]
     depends_on: { db: { condition: service_healthy } }
 
   judge:
     build: ./judge
     env_file: .env
-    volumes: ["./data/problems:/data/problems:ro"]
+    volumes: ["problems:/data/problems:ro"]
     depends_on: { backend: { condition: service_started } }   # backend runs migrations
     networks: [internal]
     # resource caps for the whole worker; per-run limits are set inside the judge
@@ -166,6 +174,7 @@ services:
 
 volumes:
   pgdata:
+  problems:
 
 networks:
   internal:
@@ -174,7 +183,8 @@ networks:
 
 (`db` must also join `internal` plus the default network; A finalizes this on Day 0.)
 
-**Who runs migrations:** the `backend` container runs `alembic upgrade head` on startup. The judge
+**Who runs migrations:** the `backend` container runs `alembic upgrade head` on startup, then the
+seed script if `SEED_ON_START=true`. The judge
 **never** creates or alters tables. If the judge starts before the tables exist, it retries.
 
 ---
@@ -306,8 +316,9 @@ touch other tables. Following this means the two can't overwrite each other's da
 - Upload format: a `.zip` holding `1.in, 1.out, 2.in, 2.out, …` at the root. A rejects the zip
   if any pair is missing, a name doesn't match `^\d+\.(in|out)$`, or a path contains `/`, `\`, or `..`.
 - Replacing testcases = delete the problem's folder + rows, then write the new ones, all in one transaction.
-- Seed problems live in `data/seed/problems/<problem_code>/` in git; A's seed script copies
-  them into `PROBLEMS_DIR`.
+- Seed problems live in `data/seed/problems/<problem_code>/` in git (`problem.yaml`,
+  `statement.md`, `tests/`, `solutions/`); A's seed script copies the tests into
+  `PROBLEMS_DIR/<problem_id>/tests/`. Format: [WEEK2_PLAN.md §2.3](WEEK2_PLAN.md).
 
 ---
 
@@ -624,11 +635,11 @@ Jobs run only when their folder changes (`paths:` filter), plus the integration 
 | `backend` | `ruff check`, `pytest` against a Postgres service container |
 | `judge` | `ruff check`, `pytest` (includes the verdict sample suite) — must run on Linux |
 | `frontend` | `npm ci`, `eslint`, `tsc --noEmit`, `vitest`, `npm run build` |
-| `integration` | `docker compose up -d --build`, run `scripts/smoke_test.sh`, then `docker compose down` |
+| `compose` (integration) | `docker compose up -d --build --wait`, run `python3 scripts/smoke_test.py`, then `docker compose down -v` |
 
-`scripts/smoke_test.sh` (owned by all, written in week 2):
+`scripts/smoke_test.py` (written by A in week 2, standard library only so it also runs on Windows):
 log in as a seed student → submit the A+B solution → poll until final → assert `AC` and
-`points_earned == max_points` in the problems list.
+`points_earned == max_points` in the problems list. Steps: [WEEK2_PLAN.md §6](WEEK2_PLAN.md).
 
 ---
 

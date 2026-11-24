@@ -66,3 +66,5 @@ yourself when CI is green, and post the link in the group chat. Details:
 - [docs/MASTER_PLAN.md](docs/MASTER_PLAN.md) — DB, API and judge specs, conventions, schedule
 - [docs/FEATURES.md](docs/FEATURES.md) — features for weeks 4–6
 - [docs/PERSON_A.md](docs/PERSON_A.md) — backend plan
+- [docs/WEEK2_PLAN.md](docs/WEEK2_PLAN.md) — week 2 (walking skeleton) plan for A, B, C
+- [docs/reports/](docs/reports/) — weekly progress reports
