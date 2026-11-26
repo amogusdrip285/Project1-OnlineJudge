@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore", frozen=True)
 
     env: str = "development"
-    database_url: str = "postgresql://oj:change-me@localhost:5432/oj"
+    database_url: str = "postgresql://oj:change-me@127.0.0.1:5432/oj"
     jwt_secret: str = "change-me-to-a-long-random-string"
     jwt_expire_minutes: int = 720
     cors_origins: str = "http://localhost:5173"

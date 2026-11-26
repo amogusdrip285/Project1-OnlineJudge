@@ -2,7 +2,7 @@
 
 Needs a disposable Postgres database in TEST_DATABASE_URL (CI sets it). Skipped otherwise.
 Locally:  docker compose up -d db
-          TEST_DATABASE_URL=postgresql://oj:change-me@localhost:5432/oj_test uv run pytest
+          TEST_DATABASE_URL=postgresql://oj:change-me@127.0.0.1:5432/oj_test uv run pytest
 (create the oj_test database first: docker compose exec db createdb -U oj oj_test)
 """
 

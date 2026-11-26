@@ -17,7 +17,7 @@ docker compose up --build
 | Frontend | http://localhost:5173 |
 | API health | http://localhost:8000/api/health |
 | API docs (Swagger) | http://localhost:8000/docs |
-| Postgres | `localhost:5432`, user/db `oj` (password in `.env`) |
+| Postgres | `127.0.0.1:5432` (not `localhost`: on Windows it tries IPv6 first and hangs), user/db `oj`, password in `.env` |
 
 Stop with `Ctrl+C`; wipe the database **and** the testcase volume with `docker compose down -v`.
 
@@ -79,7 +79,7 @@ DB tests against the compose database:
 ```bash
 docker compose up -d db
 docker compose exec db createdb -U oj oj_test
-TEST_DATABASE_URL=postgresql://oj:change-me@localhost:5432/oj_test uv run pytest
+TEST_DATABASE_URL=postgresql://oj:change-me@127.0.0.1:5432/oj_test uv run pytest
 ```
 
 New migration (after changing `app/models/`):
