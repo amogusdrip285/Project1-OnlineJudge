@@ -108,6 +108,7 @@ DATABASE_URL=postgresql://oj:change-me@db:5432/oj
 
 # --- Backend ---
 SEED_ON_START=true               # dev: load demo users/contest/problems on start (idempotent)
+SEED_DIR=/data/seed/problems     # ./data/seed is mounted read-only into the backend
 JWT_SECRET=change-me-to-a-long-random-string
 JWT_EXPIRE_MINUTES=720
 CORS_ORIGINS=http://localhost:5173
@@ -135,6 +136,7 @@ The named volume `problems` is mounted at **`/data/problems`** in `backend` (rea
 `judge` (**read-only**). It is a named volume, not a bind mount of `./data/problems`, because the
 backend runs as uid 10001 and cannot write into a host folder owned by another uid on Linux/CI.
 Inspect it with `docker compose exec backend ls /data/problems`; wipe it with `docker compose down -v`.
+The backend also mounts `./data/seed` read-only at `/data/seed` for the seed script.
 
 ### 3.4 docker-compose skeleton (created on Day 0)
 

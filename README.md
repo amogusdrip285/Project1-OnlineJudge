@@ -19,7 +19,41 @@ docker compose up --build
 | API docs (Swagger) | http://localhost:8000/docs |
 | Postgres | `localhost:5432`, user/db `oj` (password in `.env`) |
 
-Stop with `Ctrl+C`; wipe the database with `docker compose down -v`.
+Stop with `Ctrl+C`; wipe the database **and** the testcase volume with `docker compose down -v`.
+
+### Demo data
+
+With `SEED_ON_START=true` (the default in `.env.example`) the backend loads demo data on every
+start; it is safe to run again and never deletes submissions.
+
+| Username | Password | Role |
+|---|---|---|
+| `admin` | `admin123` | admin |
+| `student1` | `123456` | student — no submissions |
+| `student2` | `123456` | student — has an AC, a PARTIAL (70/100) and a CE submission |
+| `student3` | `123456` | student |
+
+Contest `project120261` has the 5 problems in [data/seed/problems/](data/seed/problems/) (560
+points in total). Each problem folder has `problem.yaml`, `statement.md`, `tests/` and reference
+`solutions/`.
+
+### Without the real judge
+
+`scripts/fake_judge.py` marks every PENDING submission as AC. Use it only while the judge
+container is stopped:
+
+```bash
+docker compose stop judge
+docker compose exec backend python -m scripts.fake_judge
+```
+
+### Smoke test
+
+From the repo root, with the stack running (and a judge or the fake judge):
+
+```bash
+python scripts/smoke_test.py   # login -> submit A+B -> AC -> points updated
+```
 
 ## Project layout
 

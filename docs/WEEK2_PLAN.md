@@ -34,7 +34,7 @@ These close gaps that MASTER_PLAN leaves open. They are already reflected in the
 | D1 | **Seed accounts** (dev only): `admin` / `admin123` (admin), `student1`, `student2`, `student3` / `123456` (students). Full names: `Admin`, `Nguyen Van A`, `Tran Thi B`, `Le Van C`. | A |
 | D2 | **Seed contest:** `project120261`, "Project 1 - 2026.1", start `2026-09-01T00:00:00Z`, end `2027-01-15T00:00:00Z`, public. | A |
 | D3 | **Seed problems** (5, all `easy`, 1000 ms, 256 MB) — see §2.3 for codes, points and I/O. | A writes, B checks the testcases with real solutions |
-| D4 | **Seed runs on backend start** when `SEED_ON_START=true` (new env var, default `true` in `.env.example`). Seed is idempotent: upsert by `username` / `code`; testcase files are rewritten only when missing. | A |
+| D4 | **Seed runs on backend start** when `SEED_ON_START=true` (new env var, default `true` in `.env.example`). Seed is idempotent and create-only: it adds missing users/contest/problems (by `username` / `code`) and never changes existing rows, so admin edits survive restarts; missing testcase files are restored. Refused when `ENV=production`. | A |
 | D5 | **Testcase storage becomes a named volume** `problems:` instead of the bind mount `./data/problems`. Reason: the backend runs as uid 10001; on Linux (CI) it cannot write into a host folder owned by another uid, so the seed would fail. A named volume takes the image's ownership. Backend mounts it read-write, judge read-only. `data/problems/` in git stays only as a placeholder. | A (compose), B (judge mount) |
 | D6 | **Smoke test is Python, not bash:** `scripts/smoke_test.py`, standard library only (`urllib`, `json`), so it runs the same on Windows and in CI without `jq`. MASTER_PLAN §10.4 is updated to match (it used to say `smoke_test.sh`). | A writes, B + C review |
 | D7 | **Integer division in seed problems:** A+B uses only **non-negative** `a`, `b` with `b > 0`, because C++ `/` and Python `//` differ on negatives. | A |
@@ -142,7 +142,7 @@ data/seed/problems/P_ADD_SUB_MUL_DIV/
 | 1 | `P_ADD_SUB_MUL_DIV` | Week 1 - Add Subtract Multiplication Division of A and B | 100 | 10 (1) | `a b` (0 ≤ a ≤ 10⁹, 1 ≤ b ≤ 10⁹) → `a+b`, `a-b`, `a*b`, `a/b` (integer), one per line. Needs 64-bit. |
 | 2 | `P_HHMMSS_TO_SECONDS` | Week 1 - Convert hh:mm:ss to seconds | 140 | 10 (1) | `hh:mm:ss` → total seconds |
 | 3 | `P_UPPERCASE_TEXT` | Week 1 - Convert a text to uppercase | 100 | 8 (1) | lines of text until EOF → same lines uppercased |
-| 4 | `P_SUM_OF_ARRAY` | Week 1 - Sum of an array | 120 | 10 (2) | `n` then `n` integers (n ≤ 10⁶) → sum. Large tests catch slow I/O. |
+| 4 | `P_SUM_OF_ARRAY` | Week 1 - Sum of an array | 120 | 10 (2) | `n` then `n` integers (n ≤ 10⁵, \|x\| ≤ 10⁹) → sum. Large tests catch slow I/O. (10⁵, not 10⁶, keeps the repo small.) |
 | 5 | `P_MAX_OF_THREE` | Week 1 - Max of three numbers | 100 | 6 (1) | `a b c` → max |
 
 Seed also inserts **3 already-judged submissions for `student2`** with matching
@@ -399,7 +399,9 @@ Run **from the repo root** (it reads the solution file by relative path) after
 9. Print a one-line summary; on failure print the last response body.
 
 CI `compose` job: after `up --wait`, run `python3 scripts/smoke_test.py`; on failure, print
-`docker compose logs`. Because the 5 s cooldown is per user, the smoke test submits **once**.
+`docker compose logs`. **Until B's judge is merged** the job starts `scripts.fake_judge` first;
+B deletes that step in the PR that makes the real judge work (never run both). On a 429 (a run
+moments earlier) the script waits for the cooldown and retries once. Because the 5 s cooldown is per user, the smoke test submits **once**.
 
 ---
 
@@ -452,7 +454,7 @@ Nobody waits: everyone builds against the spec, and the mocks/fake judge cover t
 | B and C each have ~2 weeks of work in one week | M2 slips | Day-by-day order above puts the M2 path first; nice-to-haves (copy buttons, debounce, rows-per-page) can slip to Monday |
 | Windows dev machines can't run the judge natively | B can't test | Always run the judge in Docker (`docker compose run --rm judge …`); CI on Linux is the reference |
 | Seed volume permissions on Linux | CI seed fails | D5 (named volume) |
-| `RLIMIT_AS` too tight for Python / C++ runtime | False MLE/RE on AC code | 64 MB slack; check with seed `ac.py` on the 10⁶-number test |
+| `RLIMIT_AS` too tight for Python / C++ runtime | False MLE/RE on AC code | 64 MB slack; check with seed `ac.py` on the 10⁵-number test |
 | Python slow on `P_SUM_OF_ARRAY` with `input()` | False TLE | The seed `ac.py` uses `sys.stdin.buffer.read()`; statement mentions fast input |
 | Monaco loads from a CDN by default | Editor blank offline / in demo | §4.1: `loader.config({ monaco })` |
 | `fake_judge.py` and the real judge both running | Jobs judged twice / wrong verdicts | Only run `fake_judge` when the judge container is stopped; it warns on start |
