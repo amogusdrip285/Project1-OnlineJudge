@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 720
     cors_origins: str = "http://localhost:5173"
     problems_dir: str = "/data/problems"
+    seed_dir: str = "/data/seed/problems"
     max_source_bytes: int = 65536
     submit_cooldown_seconds: int = 5
 

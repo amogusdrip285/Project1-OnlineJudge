@@ -8,6 +8,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import DataError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,12 @@ async def _handle_validation_error(_: Request, exc: RequestValidationError) -> J
     return error_response(400, "VALIDATION_ERROR", _describe_validation_error(exc))
 
 
+async def _handle_data_error(request: Request, exc: DataError) -> JSONResponse:
+    # The DB refused a value (out of range, bad encoding): the client's input, not our bug.
+    logger.warning("Rejected input on %s %s: %s", request.method, request.url.path, exc.orig)
+    return error_response(400, "VALIDATION_ERROR", "Invalid input value")
+
+
 async def _handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("Unhandled error on %s %s", request.method, request.url.path, exc_info=exc)
     return error_response(500, "INTERNAL_ERROR", "Internal server error")
@@ -84,4 +91,5 @@ def register_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(AppError, _handle_app_error)
     app.add_exception_handler(StarletteHTTPException, _handle_http_exception)
     app.add_exception_handler(RequestValidationError, _handle_validation_error)
+    app.add_exception_handler(DataError, _handle_data_error)
     app.add_exception_handler(Exception, _handle_unexpected_error)

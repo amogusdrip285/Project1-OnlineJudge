@@ -50,10 +50,10 @@ def alembic_config(db_url: str) -> Config:
 
 @pytest.fixture
 def migrated_db(alembic_config: Config):
+    # Starts from empty and leaves the DB at head, because the other DB tests share it.
     command.downgrade(alembic_config, "base")
     command.upgrade(alembic_config, "head")
     yield
-    command.downgrade(alembic_config, "base")
 
 
 @pytest.mark.usefixtures("migrated_db")
@@ -89,5 +89,6 @@ def test_downgrade_removes_all_tables(alembic_config: Config, db_url: str) -> No
         tables = set(inspect(engine).get_table_names())
     finally:
         engine.dispose()
+        command.upgrade(alembic_config, "head")  # leave the shared test DB usable
 
     assert not (MVP_TABLES & tables)

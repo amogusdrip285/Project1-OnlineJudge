@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.errors import register_error_handlers
-from app.routers import health
+from app.routers import auth, contests, health
 
 API_PREFIX = "/api"
 
@@ -18,11 +18,12 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
     )
     register_error_handlers(app)
-    app.include_router(health.router, prefix=API_PREFIX)
+    for router in (health.router, auth.router, contests.router):
+        app.include_router(router, prefix=API_PREFIX)
     return app
 
 
