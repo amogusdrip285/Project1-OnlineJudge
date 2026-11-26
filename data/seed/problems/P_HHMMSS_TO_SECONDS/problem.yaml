@@ -1,0 +1,8 @@
+code: P_HHMMSS_TO_SECONDS
+title: Week 1 - Convert hh:mm:ss to seconds
+level: easy
+time_limit_ms: 1000
+memory_limit_mb: 256
+max_points: 140
+order_index: 2
+sample_count: 1

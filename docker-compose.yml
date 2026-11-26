@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:16
     env_file: .env
-    ports: ["5432:5432"]
+    ports: ["127.0.0.1:5432:5432"] # local tools only; never expose the DB on the network
     volumes: [pgdata:/var/lib/postgresql/data]
     networks: [default, internal]
     healthcheck:
@@ -15,7 +15,9 @@ services:
     build: ./backend
     env_file: .env
     ports: ["8000:8000"]
-    volumes: ["./data/problems:/data/problems"]
+    volumes:
+      - problems:/data/problems # named volume: writable by the non-root backend user
+      - ./data/seed:/data/seed:ro # seed problems, read by scripts/seed.py
     depends_on:
       db: { condition: service_healthy }
     networks: [default]
@@ -28,7 +30,7 @@ services:
   judge:
     build: ./judge
     env_file: .env
-    volumes: ["./data/problems:/data/problems:ro"]
+    volumes: ["problems:/data/problems:ro"]
     depends_on:
       backend: { condition: service_healthy } # backend runs the migrations
     networks: [internal] # only reaches db, never the internet
@@ -46,3 +48,4 @@ networks:
 
 volumes:
   pgdata:
+  problems:

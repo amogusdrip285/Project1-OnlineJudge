@@ -1,6 +1,8 @@
 # Force LF everywhere: shell scripts and testcase files break with CRLF inside Linux containers.
 * text=auto eol=lf
 *.bat text eol=crlf
+# Testcases are compared byte-for-byte by the judge: never let git convert them.
+data/seed/** text eol=lf
 *.zip binary
 *.png binary
 *.jpg binary
